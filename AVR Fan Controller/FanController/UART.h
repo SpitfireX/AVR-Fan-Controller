@@ -8,9 +8,9 @@
 #ifndef UART_H_
 #define UART_H_
 
-extern char uart_enabled;
-extern char uart_rx_active;
-extern char uart_tx_active;
+extern volatile char uart_enabled;
+extern volatile char uart_rx_active;
+extern volatile char uart_tx_active;
 
 void uart_init(void);
 void uart_disable(void);

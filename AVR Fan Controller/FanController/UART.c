@@ -47,7 +47,10 @@ void uart_disable(void){
 }
 
 void uart_send_data(char* data, char size){
-	while(uart_tx_active == 1 || uart_enabled != 1){}
+	if (!uart_enabled)
+		return;
+	
+	while(uart_tx_active == 1){}
 	tx_len = size;
 	tx_buf = data;
 	uart_tx_active = 1;

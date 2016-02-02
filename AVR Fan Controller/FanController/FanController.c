@@ -11,59 +11,69 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-volatile char duty = 255;
-volatile uint32_t int0_cycles = 0;
+volatile uint32_t int0_cycles = 0xAABBCCDD;
 
-volatile char ext_int_flag = 0;
+volatile char ch_num = 4;
+volatile char ch_duty[4] = {255, 255, 255, 255};
 
 void pin_init(void) {
-	DDRD &= ~(1 << DDD2); // INT0
-	DDRD |= (1 << DDD5); // LED
-	DDRD |= (1 << DDD6); // MOSFET
+	// input configuration
+	// data direction as inputs
+	DDRC &= ~(1 << DDC0); // channel 1
+	DDRC &= ~(1 << DDC1); // channel 2
+	DDRC &= ~(1 << DDC2); // channel 3
 	
+	// input pullups
+	PORTC |= (1 << PORTC0); // channel 1
+	PORTC |= (1 << PORTC1); // channel 2
+	PORTC |= (1 << PORTC2); // channel 3
+	
+	// pwm configuration
+	// data direction as outputs
+	DDRD |= (1 << DDD6); // channel 1
+	DDRD |= (1 << DDD5); // channel 2
+	DDRB |= (1 << DDB1); // channel 3
+	DDRB |= (1 << DDB2); // channel 4
+	
+	// set PWM duty cycles
+	OCR0A = ch_duty[0]; // channel 1
+	OCR0B = ch_duty[1]; // channel 2
+	OCR1AL = ch_duty[2]; // channel 3
+	OCR1BL = ch_duty[3]; // channel 4
+	
+	// Timer0 setup
+	TCCR0A |= (1 << WGM01) | (1 << WGM00); // set timer mode to fast PWM
+	TCCR0A |= (1 << COM0B1) | (1 << COM0A1); // configure fast PWM non-inverting mode
+	TCCR0B |= (1 << CS00); // set prescaler to 1 and activate timer
+	
+	// Timer1 setup
+	TCCR1A |= (1 << WGM10);
+	TCCR1B |= (1 << WGM12); // set timer mode to 8-bit fast PWM
+	TCCR1A |= (1 << COM1A1) | (1 << COM1B1); // configure fast PWM non-inverting mode
+	TCCR1B |= (1 << CS10); // set prescaler to 1 and activate timer
+	
+	// INT0 setup
+	DDRD &= ~(1 << DDD2); // configure as input
 	PORTD |= (1 << PORTD2); // INT0 pullup
-	
-	//set PWM duty cycle
-	OCR0B = duty; // LED
-	OCR0A = duty; // MOSFET
-	
-	// set timer mode to fast PWM
-	TCCR0A |= (1 << WGM01) | (1 << WGM00);
-	
-	//configure fast PWM in non-inverting mode
-	TCCR0A |= (1 << COM0B1);
-	TCCR0A |= (1 << COM0A1);
-	
-	// set prescaler to 1 and activate timer
-	TCCR0B |= (1 << CS00);
-	
-	//INT0 setup
-	EICRA |= (1 << ISC00); //trigger on falling edge
-}
-
-void enable_ext_int(){
-	EIMSK |= (1 << INT0); //enable INT0
-	ext_int_flag = 1;
-}
-
-void disable_ext_int(){
-	EIMSK &= ~(1 << INT0); //disable INT0
-	ext_int_flag = 0;
+	EICRA |= (1 << ISC00); // trigger on falling edge
 }
 
 void measure_rpm(){
 	while(uart_tx_active == 1){} // wait for pending uart transmission to finish
 	uart_disable();
-	enable_ext_int();
 	
-	char old_duty = OCR0A;
 	int0_cycles = 0;
+	while (!(PINC & (1 << PINC0))){}
+	while (PINC & (1 << PINC0)){}
+	while (!(PINC & (1 << PINC0)))
+	{
+		int0_cycles++;
+	}
+	while (PINC & (1 << PINC0))
+	{
+		int0_cycles++;
+	}
 	
-	int0_timer(&int0_cycles);
-	
-	OCR0A = old_duty;
-	
-	disable_ext_int();
 	uart_enable();
 }
 
@@ -80,18 +90,5 @@ int main(void)
 		uart_send_data(&int0_cycles, 4);
 		measure_rpm();
 		_delay_ms(1000);
-		//OCR0A = 0x00;
-		//OCR0B = 0x00;		
-		//_delay_ms(100);
-		//OCR0A = 0xFF;
-		//OCR0B = 0xFF;
-		//_delay_ms(900);
 	}
-}
-
-ISR(INT0_vect)
-{
-	//OCR0B = 0xFF;
-	//_delay_ms(1);
-	//OCR0B = 0;
 }
