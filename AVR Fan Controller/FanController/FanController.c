@@ -5,13 +5,11 @@
  *  Author: Timm
  */ 
 
-#define F_CPU 16000000
-#define BAUD 38400
-
+#include "MCUConsts.h"
+#include "UART.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-#include "UART.h"
 
 volatile char duty = 255;
 volatile uint32_t int0_cycles = 0;

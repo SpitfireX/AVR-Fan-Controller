@@ -5,9 +5,7 @@
  *  Author: Timm
  */ 
 
-#define F_CPU 16000000
-#define BAUD 38400
-
+#include "MCUConsts.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/setbaud.h>
