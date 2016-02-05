@@ -51,11 +51,6 @@ void pin_init(void) {
 	TCCR1B |= (1 << WGM12); // set timer mode to 8-bit fast PWM
 	TCCR1A |= (1 << COM1A1) | (1 << COM1B1); // configure fast PWM non-inverting mode
 	TCCR1B |= (1 << CS10); // set prescaler to 1 and activate timer
-	
-	// INT0 setup
-	DDRD &= ~(1 << DDD2); // configure as input
-	PORTD |= (1 << PORTD2); // INT0 pullup
-	EICRA |= (1 << ISC00); // trigger on falling edge
 }
 
 void measure_rpm(){
@@ -77,7 +72,7 @@ void measure_rpm(){
 	uart_enable();
 }
 
-extern void int0_timer(uint32_t* cycles);
+extern void pin_timer(char reg, char mask, uint32_t* cycles);
 
 int main(void)
 {
@@ -88,7 +83,9 @@ int main(void)
 	while(1)
 	{
 		uart_send_data(&int0_cycles, 4);
-		measure_rpm();
+		pin_timer(0x26, _BV(PINC0), &int0_cycles);
+		//pin_timer(0xCC, 0xEE, 0xABAB);
+		//measure_rpm();
 		_delay_ms(1000);
 	}
 }

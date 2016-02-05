@@ -46,7 +46,7 @@ iw_loop:
 	rcall measure_wait
 	ret
 
- int0_timer:
+int0_timer:
 	push XL
 	push XH
 	mov XL, r24

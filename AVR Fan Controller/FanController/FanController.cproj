@@ -113,6 +113,9 @@
     <Compile Include="MCUConsts.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="PinTimer.S">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Timer.S">
       <SubType>compile</SubType>
     </Compile>
