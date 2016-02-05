@@ -1,0 +1,26 @@
+rcall	3
+brcs	false: 1	true: 2
+ld		1
+and		1
+cp		1
+brne	false: 1	true: 2
+breq	false: 1	true: 2
+ret		4
+add		1
+adc		1
+
+cloop1:
+	rcall add_cycles	; 3
+	brcs error			; 1
+	ld r18, X			; 1
+	and r18, r22		; 1
+	cp r18, r22			; 1
+	brne cloop1			; 2
+
+add_cycles:
+	add r2, r16			; 1
+	adc r3, r1			; 1
+	adc r4, r1			; 1
+	ret					; 4
+	
+total: 16

@@ -12,4 +12,6 @@
 #define F_CPU 16000000
 #define BAUD 38400
 
+#define PINC_ADDR 0x26
+
 #endif /* MCUCONSTS_H_ */

@@ -11,10 +11,12 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-volatile uint32_t int0_cycles = 0xAABBCCDD;
+#define CH_NUM 4
 
-volatile char ch_num = 4;
-volatile char ch_duty[4] = {255, 255, 255, 255};
+volatile char ch_duty[CH_NUM] = {255, 255, 255, 255};
+volatile char* ch_ocr[CH_NUM] = {&OCR0A, &OCR0B, &OCR1AL, &OCR1BL};
+volatile char ch_mask[CH_NUM] = {_BV(PINC0), _BV(PINC1), _BV(PINC2), _BV(PINC3)};
+volatile uint32_t ch_cycles[CH_NUM];
 
 void pin_init(void) {
 	// input configuration
@@ -36,10 +38,10 @@ void pin_init(void) {
 	DDRB |= (1 << DDB2); // channel 4
 	
 	// set PWM duty cycles
-	OCR0A = ch_duty[0]; // channel 1
-	OCR0B = ch_duty[1]; // channel 2
-	OCR1AL = ch_duty[2]; // channel 3
-	OCR1BL = ch_duty[3]; // channel 4
+	*ch_ocr[0] = ch_duty[0]; // channel 1
+	*ch_ocr[1] = ch_duty[1]; // channel 2
+	*ch_ocr[2] = ch_duty[2]; // channel 3
+	*ch_ocr[3] = ch_duty[3]; // channel 4
 	
 	// Timer0 setup
 	TCCR0A |= (1 << WGM01) | (1 << WGM00); // set timer mode to fast PWM
@@ -57,19 +59,19 @@ void measure_rpm(){
 	while(uart_tx_active == 1){} // wait for pending uart transmission to finish
 	uart_disable();
 	
-	int0_cycles = 0;
-	while (!(PINC & (1 << PINC0))){}
-	while (PINC & (1 << PINC0)){}
-	while (!(PINC & (1 << PINC0)))
-	{
-		int0_cycles++;
-	}
-	while (PINC & (1 << PINC0))
-	{
-		int0_cycles++;
-	}
+	measure_channel_rpm(0); // channel 1
+	measure_channel_rpm(1); // channel 2
+	measure_channel_rpm(2); // channel 3
+	measure_channel_rpm(3); // channel 4
 	
 	uart_enable();
+}
+
+void measure_channel_rpm(char channel){
+	char old_duty = *ch_ocr[channel];
+	*ch_ocr[channel] = 0xFF;
+	pin_timer(&PINC, ch_mask[channel], &ch_cycles[channel]);
+	*ch_ocr[channel] = old_duty;
 }
 
 extern void pin_timer(char reg, char mask, uint32_t* cycles);
@@ -82,10 +84,8 @@ int main(void)
 	sei();
 	while(1)
 	{
-		uart_send_data(&int0_cycles, 4);
-		pin_timer(0x26, _BV(PINC0), &int0_cycles);
-		//pin_timer(0xCC, 0xEE, 0xABAB);
-		//measure_rpm();
+		uart_send_data(ch_cycles, 4*CH_NUM);
+		measure_rpm();
 		_delay_ms(1000);
 	}
 }
