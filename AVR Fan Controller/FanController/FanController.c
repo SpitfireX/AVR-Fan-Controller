@@ -76,7 +76,7 @@ void measure_rpm() {
 void measure_channel_rpm(char channel) {
 	char old_duty = *ch_ocr[channel];
 	*ch_ocr[channel] = 0xFF;
-	_delay_us(20);
+	_delay_us(10);
 	pin_timer(&PINC, ch_mask[channel], &ch_cycles[channel]);
 	*ch_ocr[channel] = old_duty;
 	ch_rpm[channel] = (F_CPU/ch_cycles[channel])*30;
@@ -84,9 +84,18 @@ void measure_channel_rpm(char channel) {
 
 extern void pin_timer(char reg, char mask, uint32_t* cycles);
 
+volatile char* rx_buf;
+volatile char rx_len;
+
+void my_rx_callback(char* buffer, char length){
+	rx_buf = buffer;
+	rx_len = length;
+}
+
 int main(void) {
 	pin_init();
 	uart_init();
+	uart_set_rx_callback(&my_rx_callback);
 	uart_enable();
 	sei();
 	while(1)
@@ -94,6 +103,6 @@ int main(void) {
 		uart_send_data(ch_cycles, 4*CH_NUM);
 		uart_send_data(ch_rpm, 2*CH_NUM);
 		measure_rpm();
-		_delay_ms(500);
+		_delay_ms(1000);
 	}
 }

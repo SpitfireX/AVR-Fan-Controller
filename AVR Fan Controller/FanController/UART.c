@@ -6,9 +6,12 @@
  */ 
 
 #include "MCUConsts.h"
+#include "UART.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/setbaud.h>
+
+#define RX_CHUNK_LENGTH 4
 
 volatile char* tx_buf;
 volatile char* rx_buf;
@@ -18,6 +21,8 @@ volatile char rx_len = 0;
 volatile char uart_tx_active = 0;
 volatile char uart_rx_active = 0;
 volatile char uart_enabled = 0;
+
+volatile rx_callback_t rx_callback;
 
 void uart_init(void) {
 	UBRR0H = UBRRH_VALUE;
@@ -68,8 +73,25 @@ void uart_send_string(char* data){
 	uart_send_data(data, size);
 }
 
+void uart_set_rx_callback(rx_callback_t callback){
+	rx_callback = callback;
+}
+
 ISR(USART_RX_vect)
 {
+	//*(rx_buf++) = UDR0;
+	//rx_len++;
+	//
+	//if (rx_len >= RX_CHUNK_LENGTH)
+	//{
+		//rx_callback(rx_buf, rx_len);
+		//rx_len = 0;
+	//}
+	char temp = UDR0;
+	OCR0A = temp;
+	OCR0B = temp;
+	OCR1AL = temp;
+	OCR1BL = temp;
 }
 
 ISR(USART_UDRE_vect)
