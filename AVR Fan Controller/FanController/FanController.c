@@ -13,7 +13,8 @@
 
 #define CH_NUM 4
 
-volatile char ch_duty[CH_NUM] = {255, 255, 255, 255};
+volatile char ch_duty[CH_NUM] = {128, 128, 128, 128};
+//volatile char ch_duty[CH_NUM] = {255, 255, 255, 255};
 volatile char* ch_ocr[CH_NUM] = {&OCR0A, &OCR0B, &OCR1AL, &OCR1BL};
 volatile char ch_mask[CH_NUM] = {_BV(PINC0), _BV(PINC1), _BV(PINC2), _BV(PINC3)};
 volatile uint32_t ch_cycles[CH_NUM];
@@ -39,10 +40,7 @@ void pin_init(void) {
 	DDRB |= (1 << DDB2); // channel 4
 	
 	// set PWM duty cycles
-	*ch_ocr[0] = ch_duty[0]; // channel 1
-	*ch_ocr[1] = ch_duty[1]; // channel 2
-	*ch_ocr[2] = ch_duty[2]; // channel 3
-	*ch_ocr[3] = ch_duty[3]; // channel 4
+	update_duties();
 	
 	// Timer0 setup
 	TCCR0A |= (1 << WGM01) | (1 << WGM00); // set timer mode to fast PWM
@@ -56,21 +54,29 @@ void pin_init(void) {
 	TCCR1B |= (1 << CS10); // set prescaler to 1 and activate timer
 }
 
-void measure_rpm(){
+void update_duties(void) {
+	*ch_ocr[0] = ch_duty[0]; // channel 1
+	*ch_ocr[1] = ch_duty[1]; // channel 2
+	*ch_ocr[2] = ch_duty[2]; // channel 3
+	*ch_ocr[3] = ch_duty[3]; // channel 4
+}
+
+void measure_rpm() {
 	while(uart_tx_active == 1){} // wait for pending uart transmission to finish
 	uart_disable();
 	
 	measure_channel_rpm(0); // channel 1
 	measure_channel_rpm(1); // channel 2
 	measure_channel_rpm(2); // channel 3
-	measure_channel_rpm(3); // channel 4
+	//measure_channel_rpm(3); // channel 4
 	
 	uart_enable();
 }
 
-void measure_channel_rpm(char channel){
+void measure_channel_rpm(char channel) {
 	char old_duty = *ch_ocr[channel];
 	*ch_ocr[channel] = 0xFF;
+	_delay_us(20);
 	pin_timer(&PINC, ch_mask[channel], &ch_cycles[channel]);
 	*ch_ocr[channel] = old_duty;
 	ch_rpm[channel] = (F_CPU/ch_cycles[channel])*30;
@@ -78,8 +84,7 @@ void measure_channel_rpm(char channel){
 
 extern void pin_timer(char reg, char mask, uint32_t* cycles);
 
-int main(void)
-{
+int main(void) {
 	pin_init();
 	uart_init();
 	uart_enable();
@@ -89,6 +94,6 @@ int main(void)
 		uart_send_data(ch_cycles, 4*CH_NUM);
 		uart_send_data(ch_rpm, 2*CH_NUM);
 		measure_rpm();
-		_delay_ms(1000);
+		_delay_ms(500);
 	}
 }
