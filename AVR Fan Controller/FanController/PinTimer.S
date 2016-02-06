@@ -91,7 +91,7 @@ pt_exit:
 counter_wait:
 cloop1:
 	rcall add_cycles
-	brcs cw_error			; timeout error if cycle count > 0xFFFFFF
+	brcs cw_error		; timeout error if cycle count > 0x00FFFFFF
 	ld r18, X			; copy input pin into r18
 	and r18, r22		; mask it
 	cp r18, r22			; compare r18 with the mask

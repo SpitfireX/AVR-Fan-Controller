@@ -17,6 +17,7 @@ volatile char ch_duty[CH_NUM] = {255, 255, 255, 255};
 volatile char* ch_ocr[CH_NUM] = {&OCR0A, &OCR0B, &OCR1AL, &OCR1BL};
 volatile char ch_mask[CH_NUM] = {_BV(PINC0), _BV(PINC1), _BV(PINC2), _BV(PINC3)};
 volatile uint32_t ch_cycles[CH_NUM];
+volatile uint16_t ch_rpm[CH_NUM];
 
 void pin_init(void) {
 	// input configuration
@@ -72,6 +73,7 @@ void measure_channel_rpm(char channel){
 	*ch_ocr[channel] = 0xFF;
 	pin_timer(&PINC, ch_mask[channel], &ch_cycles[channel]);
 	*ch_ocr[channel] = old_duty;
+	ch_rpm[channel] = (F_CPU/ch_cycles[channel])*30;
 }
 
 extern void pin_timer(char reg, char mask, uint32_t* cycles);
@@ -85,6 +87,7 @@ int main(void)
 	while(1)
 	{
 		uart_send_data(ch_cycles, 4*CH_NUM);
+		uart_send_data(ch_rpm, 2*CH_NUM);
 		measure_rpm();
 		_delay_ms(1000);
 	}
