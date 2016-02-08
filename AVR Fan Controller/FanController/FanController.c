@@ -45,13 +45,13 @@ void pin_init(void) {
 	// Timer0 setup
 	TCCR0A |= (1 << WGM01) | (1 << WGM00); // set timer mode to fast PWM
 	TCCR0A |= (1 << COM0B1) | (1 << COM0A1); // configure fast PWM non-inverting mode
-	TCCR0B |= (1 << CS00); // set prescaler to 1 and activate timer
+	TCCR0B |= _BV(CS00); // set prescaler to 1 and activate timer
 	
 	// Timer1 setup
 	TCCR1A |= (1 << WGM10);
 	TCCR1B |= (1 << WGM12); // set timer mode to 8-bit fast PWM
 	TCCR1A |= (1 << COM1A1) | (1 << COM1B1); // configure fast PWM non-inverting mode
-	TCCR1B |= (1 << CS10); // set prescaler to 1 and activate timer
+	TCCR1B |= _BV(CS10); // set prescaler to 1 and activate timer
 }
 
 void update_duties(void) {
@@ -76,6 +76,20 @@ void measure_rpm() {
 void measure_channel_rpm(char channel) {
 	char old_duty = *ch_ocr[channel];
 	*ch_ocr[channel] = 0xFF;
+	
+	short counter = 0;
+	while (counter < 0x0FFF)
+	{
+		if (PINC & ch_mask[channel])
+		{
+			counter = 0;
+		}
+		else
+		{
+			counter++;	
+		}
+	}
+	
 	pin_timer(&PINC, ch_mask[channel], &ch_cycles[channel]);
 	*ch_ocr[channel] = old_duty;
 	ch_rpm[channel] = (F_CPU/ch_cycles[channel])*30;
@@ -86,7 +100,7 @@ extern void pin_timer(char reg, char mask, uint32_t* cycles);
 volatile char* rx_buf;
 volatile char rx_len;
 
-void my_rx_callback(char* buffer, char length){
+void my_rx_callback(char* buffer, char length) {
 	rx_buf = buffer;
 	rx_len = length;
 }

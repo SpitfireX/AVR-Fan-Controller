@@ -28,7 +28,8 @@ pin_timer:
 	push r3
 	push r4
 	push r5
-	push r6				; initial counter
+	push r6				; initial threshold counter
+	push r7
 	push r16			; cycles per iteration constant
 	push r17			; cylces wasted between waits
 
@@ -44,27 +45,29 @@ pin_timer:
 	clr r4
 	clr r5
 	clr r6
+	clr r7
 
 	; prepare constant s
 	ldi r16, 16			; -> cycle counts.txt
 	ldi r17, 7			; see code below
-	ldi r19, 255		; cycle threshold for measuring
+	ldi r19, 64			; initial threshold loop constant
 
-	; wait for pin to be LOW for a longer time
+/*	; wait for pin to be LOW for a longer time
 ploop:
 	ld r18, X			; copy input pin into r18
 	and r18, r22		; mask it
 	cp r18, r22			; compare r18 with the mask
 	breq creset			; if pin is actually high, reset the counter
-	inc r6				; increment counter
-	cp r6, r19			; compare counter to measurement threshold
-	breq pcontinue		; jumpt out of loop to start measuring
+	add r6, r19			; increment counter
+	adc r7, r1
+	brcs pcontinue		; jumpt out of loop to start measuring
 	rjmp ploop			; endless loop
 creset:
 	clr r6				; reset counter
+	clr r7
 	rjmp ploop			; jump back to loop
 
-pcontinue:
+pcontinue:*/
 
 	; measure cycles
 	rcall counter_wait	; wait for first falling edge
@@ -92,6 +95,7 @@ pt_exit:
 	; restore all registers
 	pop r17
 	pop r16
+	pop r7
 	pop r6
 	pop r5
 	pop r4
