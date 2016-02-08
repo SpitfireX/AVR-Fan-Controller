@@ -76,7 +76,6 @@ void measure_rpm() {
 void measure_channel_rpm(char channel) {
 	char old_duty = *ch_ocr[channel];
 	*ch_ocr[channel] = 0xFF;
-	_delay_us(10);
 	pin_timer(&PINC, ch_mask[channel], &ch_cycles[channel]);
 	*ch_ocr[channel] = old_duty;
 	ch_rpm[channel] = (F_CPU/ch_cycles[channel])*30;
